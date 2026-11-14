@@ -1,0 +1,24 @@
+@model IReadOnlyList<DoctorNotificationRowViewModel>
+@foreach (var item in Model)
+{
+    <article class="notification-row @(item.IsRead ? "read" : "unread")">
+        <span class="notification-symbol">◇</span>
+        <div class="notification-copy">
+            <strong>@item.NotificationType</strong>
+            <p>@item.Message</p>
+            <small>@item.CreatedAt.ToLocalTime().ToString("MMM d, yyyy · h:mm tt", CultureInfo.GetCultureInfo("en-US"))@if (item.CaseId.HasValue) { <span> · <a asp-action="History" asp-route-caseId="@item.CaseId">DC-@item.CaseId.Value.ToString("D6") case history</a></span> }</small>
+        </div>
+        @if (!item.IsRead)
+        {
+            <form asp-action="MarkRead" method="post">
+                <input type="hidden" name="id" value="@item.NotificationId" />
+                <input type="hidden" name="returnUrl" value="@(Context.Request.PathBase + Context.Request.Path + Context.Request.QueryString)" />
+                <button class="text-button" type="submit">Mark read</button>
+            </form>
+        }
+        else
+        {
+            <span class="read-label">Read</span>
+        }
+    </article>
+}

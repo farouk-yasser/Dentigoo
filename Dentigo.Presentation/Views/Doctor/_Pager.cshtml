@@ -1,0 +1,61 @@
+@using Microsoft.AspNetCore.WebUtilities
+@model PagerViewModel
+@{
+    // Keep every filter/sort value from the current URL; only "Page" changes.
+    string PageUrl(int page)
+    {
+        var query = new Dictionary<string, string?>();
+        foreach (var item in Context.Request.Query)
+        {
+            if (!string.Equals(item.Key, "Page", StringComparison.OrdinalIgnoreCase))
+                query[item.Key] = item.Value.ToString();
+        }
+        if (page > 1) query["Page"] = page.ToString();
+        return QueryHelpers.AddQueryString((Context.Request.PathBase + Context.Request.Path).Value ?? "/", query);
+    }
+
+    var numbers = Enumerable.Range(1, Model.TotalPages)
+        .Where(p => p == 1 || p == Model.TotalPages || Math.Abs(p - Model.Page) <= 2)
+        .ToList();
+    var previous = 0;
+}
+<div class="list-footer">
+    <span>@(Model.Shown == 0 ? "No results" : $"Showing {Model.FirstItem}–{Model.LastItem} of {Model.TotalCount}")</span>
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="pager" aria-label="Pagination">
+            @if (Model.Page > 1)
+            {
+                <a class="page-link" href="@PageUrl(Model.Page - 1)" rel="prev">‹ Previous</a>
+            }
+            else
+            {
+                <span class="page-link disabled">‹ Previous</span>
+            }
+            @foreach (var number in numbers)
+            {
+                if (number - previous > 1)
+                {
+                    <span class="page-gap">…</span>
+                }
+                if (number == Model.Page)
+                {
+                    <span class="page-link current" aria-current="page">@number</span>
+                }
+                else
+                {
+                    <a class="page-link" href="@PageUrl(number)">@number</a>
+                }
+                previous = number;
+            }
+            @if (Model.Page < Model.TotalPages)
+            {
+                <a class="page-link" href="@PageUrl(Model.Page + 1)" rel="next">Next ›</a>
+            }
+            else
+            {
+                <span class="page-link disabled">Next ›</span>
+            }
+        </nav>
+    }
+</div>

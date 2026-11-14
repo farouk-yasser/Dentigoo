@@ -1,0 +1,56 @@
+@model Dentigo.Presentation.Models.DoctorDashboardViewModel
+@using Dentigo.Domain.Enums
+@{
+    ViewData["Title"] = "Doctor Dashboard";
+    string Label(DentalCaseStatus status) => status switch
+    {
+        DentalCaseStatus.DesignSubmitted => "Doctor Review",
+        DentalCaseStatus.InProgress => "Lab Processing",
+        _ => status.ToString()
+    };
+}
+<section class="page-heading">
+    <div><p class="eyebrow">Good morning, Doctor</p><h1>Dashboard</h1><p class="muted">Track your cases and take action on submitted dental designs.</p></div>
+    <a class="button primary" asp-action="Reviews">Review designs <span>→</span></a>
+</section>
+<section class="stats-grid" aria-label="Case summary">
+    <article class="stat-card"><span>Active cases</span><strong>@Model.ActiveCases</strong><small>Excludes review, revision, and closed cases</small></article>
+    <article class="stat-card"><span>Doctor review</span><strong>@Model.DoctorReview</strong><small>Awaiting your decision</small></article>
+    <article class="stat-card"><span>Revision requested</span><strong>@Model.RevisionRequested</strong><small>Waiting for a new lab version</small></article>
+    <article class="stat-card"><span>Completed cases</span><strong>@Model.CompletedCases</strong><small>All time</small></article>
+</section>
+<div class="content-grid">
+    <section class="panel">
+        <div class="panel-heading"><div><h2>Recent dental cases</h2><p>Latest updates in your case list</p></div><a asp-action="Cases" class="inline-link">All cases →</a></div>
+        @if (Model.RecentCases.Count == 0)
+        {
+            <p class="empty-state">No cases are available for this doctor account.</p>
+        }
+        else
+        {
+            <div class="table-scroll"><table><thead><tr><th>CASE</th><th>PATIENT</th><th>TREATMENT</th><th>STATUS</th><th>UPDATED</th></tr></thead><tbody>
+            @foreach (var item in Model.RecentCases)
+            {
+                <tr><td><a class="case-id" asp-action="History" asp-route-caseId="@item.CaseId">DC-@item.CaseId.ToString("D6")</a></td><td>@item.PatientName</td><td>@item.TreatmentName</td><td><span class="status-chip">@Label(item.Status)</span></td><td>@item.UpdatedAt?.ToLocalTime().ToString("MMM d", CultureInfo.GetCultureInfo("en-US"))</td></tr>
+            }
+            </tbody></table></div>
+        }
+    </section>
+    <section class="panel">
+        <div class="panel-heading"><div><h2>Waiting for your review</h2><p>Latest lab submissions</p></div><span class="count-chip">@Model.DoctorReview pending</span></div>
+        @if (Model.PendingReviews.Count == 0)
+        {
+            <p class="empty-state">You are all caught up.</p>
+        }
+        else
+        {
+            <div class="review-list">
+            @foreach (var review in Model.PendingReviews)
+            {
+                <a class="review-row" asp-action="Review" asp-route-id="@review.DesignVersionId"><span class="tooth-badge">v@(review.VersionNumber)</span><span><strong>@review.PatientName</strong><small>@review.TreatmentName · @review.SubmittedAt.ToLocalTime().ToString("MMM d, h:mm tt", CultureInfo.GetCultureInfo("en-US"))</small></span><span class="row-arrow">→</span></a>
+            }
+            </div>
+        }
+    </section>
+</div>
+<aside class="hint-card"><strong>Review rule</strong><span>Only the latest submitted design can receive a decision. Approval accepts the design; it does not complete the dental case.</span></aside>

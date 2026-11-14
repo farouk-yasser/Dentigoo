@@ -1,0 +1,20 @@
+@model IReadOnlyList<DesignReviewRowViewModel>
+@foreach (var item in Model)
+{
+    var chip = item.ReviewStatus switch
+    {
+        DesignReviewStatus.Approved => "approved",
+        DesignReviewStatus.Rejected => "rejected",
+        _ => ""
+    };
+    <tr>
+        <td><a class="case-id" asp-action="History" asp-route-caseId="@item.CaseId">DC-@item.CaseId.ToString("D6")</a></td>
+        <td>@item.PatientName</td>
+        <td>@item.TreatmentName</td>
+        <td><strong>v@(item.VersionNumber)</strong><small class="table-sub">@item.FileName</small></td>
+        <td>@item.SubmittedBy</td>
+        <td>@item.SubmittedAt.ToLocalTime().ToString("MMM d, yyyy · h:mm tt", CultureInfo.GetCultureInfo("en-US"))</td>
+        <td><span class="status-chip @chip">@item.ReviewStatus.ToLabel()</span></td>
+        <td><a class="button small primary" asp-action="Review" asp-route-id="@item.DesignVersionId">Review</a></td>
+    </tr>
+}

@@ -1,0 +1,71 @@
+@model Dentigo.Presentation.Models.NotificationListViewModel
+@{
+    ViewData["Title"] = "Notifications";
+}
+<section class="page-heading"><div><p class="eyebrow">Updates from your case workflow</p><h1>Notifications</h1><p class="muted">In-app alerts sent to your signed-in doctor account.</p></div></section>
+<section class="panel list-view">
+    <div class="panel-heading"><div><h2>Your notifications</h2><p>Unread notifications are highlighted.</p></div><span class="count-chip">@Model.UnreadCount unread</span></div>
+
+    <form method="get" asp-action="Notifications" class="list-toolbar" autocomplete="off" data-autosubmit>
+        <input type="hidden" asp-for="Sort" />
+        <input type="hidden" asp-for="PageSize" />
+        <div class="field grow">
+            <label asp-for="Search">Search</label>
+            <input asp-for="Search" type="search" placeholder="Search messages" />
+            <span asp-validation-for="Search" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Filter">Show</label>
+            <select asp-for="Filter">
+                <option value="all">All</option>
+                <option value="unread">Unread</option>
+                <option value="read">Read</option>
+            </select>
+            <span asp-validation-for="Filter" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Type">Type</label>
+            <select asp-for="Type">
+                <option value="">All types</option>
+                @foreach (var t in Model.Types)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+            <span asp-validation-for="Type" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="From"></label>
+            <input asp-for="From" />
+            <span asp-validation-for="From" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="To"></label>
+            <input asp-for="To" />
+            <span asp-validation-for="To" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Dir">Order</label>
+            <select asp-for="Dir">
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+            </select>
+            <span asp-validation-for="Dir" class="field-error"></span>
+        </div>
+        <button class="button primary small" type="submit">Apply</button>
+        <a class="button secondary small" asp-action="Notifications">Reset</a>
+    </form>
+
+    <div class="notification-list"><partial name="_NotificationRows" model="Model.Results.Items" /></div>
+    @if (Model.Results.Items.Count == 0)
+    {
+        <p class="empty-state">No notifications match your search and filters.</p>
+    }
+    <partial name="_Pager" model="Model.Results.ToPager()" />
+</section>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/dentigo-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-manual-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-lists.js" asp-append-version="true"></script>
+}

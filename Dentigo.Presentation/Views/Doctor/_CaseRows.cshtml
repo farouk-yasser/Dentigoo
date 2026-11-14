@@ -1,0 +1,11 @@
+@model IReadOnlyList<DoctorCaseRowViewModel>
+@foreach (var item in Model)
+{
+    <tr>
+        <td><a class="case-id" asp-action="History" asp-route-caseId="@item.CaseId">DC-@item.CaseId.ToString("D6")</a></td>
+        <td>@item.PatientName</td>
+        <td>@item.TreatmentName</td>
+        <td><span class="status-chip">@item.Status.ToLabel()</span></td>
+        <td>@item.UpdatedAt?.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.GetCultureInfo("en-US"))</td>
+    </tr>
+}

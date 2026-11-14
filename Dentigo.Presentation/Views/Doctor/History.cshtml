@@ -1,0 +1,62 @@
+@model Dentigo.Presentation.Models.CaseHistoryViewModel
+@{
+    ViewData["Title"] = "Case History";
+}
+<section class="page-heading"><div><p class="eyebrow">DC-@Model.CaseId.ToString("D6") · @Model.PatientName</p><h1>Case history</h1><p class="muted">@Model.TreatmentName · A read-only timeline of important case events.</p></div><a class="button secondary" asp-action="Reviews">Design review</a></section>
+<section class="panel list-view">
+    <div class="panel-heading"><div><h2>Activity timeline</h2><p>History records are read-only.</p></div><span class="status-chip">Read only</span></div>
+
+    <form method="get" asp-action="History" class="list-toolbar" autocomplete="off" data-autosubmit>
+        <input type="hidden" asp-for="CaseId" />
+        <input type="hidden" asp-for="PageSize" />
+        <div class="field grow">
+            <label asp-for="Search">Search</label>
+            <input asp-for="Search" type="search" placeholder="Description, reason or person" />
+            <span asp-validation-for="Search" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="EventType"></label>
+            <select asp-for="EventType">
+                <option value="">All events</option>
+                @foreach (var t in Model.EventTypes)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+            <span asp-validation-for="EventType" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="From"></label>
+            <input asp-for="From" />
+            <span asp-validation-for="From" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="To"></label>
+            <input asp-for="To" />
+            <span asp-validation-for="To" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Dir">Order</label>
+            <select asp-for="Dir">
+                <option value="desc">Newest first</option>
+                <option value="asc">Oldest first</option>
+            </select>
+            <span asp-validation-for="Dir" class="field-error"></span>
+        </div>
+        <button class="button primary small" type="submit">Apply</button>
+        <a class="button secondary small" asp-action="History" asp-route-caseId="@Model.CaseId">Reset</a>
+    </form>
+
+    <div class="timeline"><partial name="_HistoryRows" model="Model.Results.Items" /></div>
+    @if (Model.Results.Items.Count == 0)
+    {
+        <p class="empty-state">No history events match your search and filters.</p>
+    }
+    <partial name="_Pager" model="Model.Results.ToPager()" />
+</section>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/dentigo-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-manual-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-lists.js" asp-append-version="true"></script>
+}

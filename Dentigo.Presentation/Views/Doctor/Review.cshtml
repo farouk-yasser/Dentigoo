@@ -1,0 +1,68 @@
+@model Dentigo.Presentation.Models.DesignReviewDetailViewModel
+@using Dentigo.Domain.Enums
+@{
+    ViewData["Title"] = "Review Design";
+    var canDecide = Model.IsLatestVersion && Model.ReviewStatus == DesignReviewStatus.PendingReview;
+    var rejectHasErrors = ViewData.ModelState.Any(kv => kv.Key.StartsWith("RejectForm", StringComparison.Ordinal) && kv.Value?.Errors.Count > 0);
+}
+<p class="back-link"><a asp-action="Reviews">← Back to review queue</a></p>
+<section class="page-heading"><div><p class="eyebrow">DC-@Model.CaseId.ToString("D6") · @Model.PatientName</p><h1>@Model.TreatmentName design</h1><p class="muted">Version @Model.VersionNumber · submitted by @Model.SubmittedBy · @Model.SubmittedAt.ToLocalTime().ToString("MMM d, yyyy · h:mm tt", CultureInfo.GetCultureInfo("en-US"))</p></div><a class="button secondary" asp-action="History" asp-route-caseId="@Model.CaseId">Case history</a></section>
+<div class="content-grid review-layout">
+    <section class="panel">
+        <div class="panel-heading"><div><h2>Submitted design</h2><p>Design file attached to version @Model.VersionNumber</p></div><span class="file-badge">@Model.FileType · @Model.FileSize.ToString("N0") bytes</span></div>
+        <div class="panel-heading version-heading"><div><h2>Previous versions</h2><p>Earlier submissions remain preserved.</p></div></div>
+        @if (Model.PreviousVersions.Count == 0)
+        {
+            <p class="empty-state compact">This is the first submitted version.</p>
+        }
+        else
+        {
+            <div class="version-list">
+            @foreach (var version in Model.PreviousVersions)
+            {
+                <a class="version-row" asp-action="Review" asp-route-id="@version.DesignVersionId"><span><strong>Version @version.VersionNumber</strong><small>@version.FileName · @version.SubmittedAt.ToLocalTime().ToString("MMM d, yyyy", CultureInfo.GetCultureInfo("en-US"))</small></span><span class="status-chip">@version.ReviewStatus</span></a>
+            }
+            </div>
+        }
+    </section>
+    <div class="stack">
+        <section class="panel"><div class="panel-heading"><div><h2>Case instructions</h2><p>Context from the doctor-created case</p></div></div>
+            <dl class="facts"><div><dt>Patient</dt><dd>@Model.PatientName</dd></div><div><dt>Tooth / treatment</dt><dd>@Model.TreatmentName</dd></div><div><dt>Lab technician</dt><dd>@Model.SubmittedBy</dd></div></dl>
+            <div class="doctor-note"><strong>Doctor instructions</strong><p>@(string.IsNullOrWhiteSpace(Model.DoctorInstructions) ? "No additional instructions were recorded." : Model.DoctorInstructions)</p></div>
+            @if (canDecide)
+            {
+                <form asp-action="Approve" method="post" class="decision-form approve-form" data-prevent-double>
+                    <input type="hidden" asp-for="ApproveForm.DesignVersionId" />
+                    <button class="button primary full" type="submit">Approve latest design</button>
+                </form>
+                <form asp-action="RequestRevision" method="post" class="decision-form" data-prevent-double>
+                    <input type="hidden" asp-for="RevisionForm.DesignVersionId" />
+                    <label asp-for="RevisionForm.Reason">Request a revision <span class="required">Reason required</span></label>
+                    <textarea asp-for="RevisionForm.Reason" rows="4" data-char-count="2000" placeholder="Describe the changes the laboratory should make."></textarea>
+                    <div class="field-meta"><span asp-validation-for="RevisionForm.Reason" class="field-error"></span><span class="char-count" data-char-count-for="RevisionForm_Reason">0 / 2000</span></div>
+                    <button class="button revise full" type="submit">Send revision request</button>
+                </form>
+                <details class="reject-details" open="@rejectHasErrors"><summary>Reject design</summary>
+                    <form asp-action="Reject" method="post" class="decision-form" data-prevent-double>
+                        <input type="hidden" asp-for="RejectForm.DesignVersionId" />
+                        <label asp-for="RejectForm.Reason">Reason for rejection <span class="required">Required</span></label>
+                        <textarea asp-for="RejectForm.Reason" rows="4" data-char-count="2000" placeholder="Explain why this design is unsuitable."></textarea>
+                        <div class="field-meta"><span asp-validation-for="RejectForm.Reason" class="field-error"></span><span class="char-count" data-char-count-for="RejectForm_Reason">0 / 2000</span></div>
+                        <button class="button reject full" type="submit">Reject and return to lab</button>
+                    </form>
+                </details>
+                <p class="fine-print">The review applies only to the latest version. Approving a design does not complete the case.</p>
+            }
+            else
+            {
+                <div class="alert info">This version is not the latest pending submission, so it cannot receive a new decision.</div>
+                @if (!string.IsNullOrWhiteSpace(Model.ReviewReason)) { <div class="doctor-note"><strong>Recorded review reason</strong><p>@Model.ReviewReason</p></div> }
+            }
+        </section>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/dentigo-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-manual-validation.js" asp-append-version="true"></script>
+}

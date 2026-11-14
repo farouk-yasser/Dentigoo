@@ -1,0 +1,21 @@
+@using Microsoft.AspNetCore.WebUtilities
+@model SortHeaderViewModel
+@{
+    var active = string.Equals(Model.CurrentSort, Model.Key, StringComparison.OrdinalIgnoreCase);
+    var nextDir = active ? (Model.CurrentDir == "asc" ? "desc" : "asc") : Model.DefaultDir;
+    var ariaSort = !active ? "none" : (Model.CurrentDir == "asc" ? "ascending" : "descending");
+
+    // Same filters as now, new Sort/Dir, back to page 1.
+    var query = new Dictionary<string, string?>();
+    foreach (var item in Context.Request.Query)
+    {
+        if (string.Equals(item.Key, "Page", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(item.Key, "Sort", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(item.Key, "Dir", StringComparison.OrdinalIgnoreCase)) continue;
+        query[item.Key] = item.Value.ToString();
+    }
+    query["Sort"] = Model.Key;
+    query["Dir"] = nextDir;
+    var href = QueryHelpers.AddQueryString((Context.Request.PathBase + Context.Request.Path).Value ?? "/", query);
+}
+<th scope="col" class="sortable@(active ? " sorted" : "")" aria-sort="@ariaSort"><a class="sort-link" href="@href">@Model.Label <span class="sort-arrow" aria-hidden="true">@(active ? (Model.CurrentDir == "asc" ? "▲" : "▼") : "↕")</span></a></th>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Dentigo</title>
+    <link rel="stylesheet" href="~/css/doctor-review.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" asp-controller="Doctor" asp-action="Index"><span class="brand-mark">✦</span> Dentigo</a>
+            <div class="nav-caption">DOCTOR WORKSPACE</div>
+            <nav class="side-nav" aria-label="Doctor workspace">
+                <a asp-controller="Doctor" asp-action="Index" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "selected" : "")"><span>⌂</span> Dashboard</a>
+                <a asp-controller="Doctor" asp-action="Reviews" class="@(new[] { "Reviews", "Review" }.Contains(ViewContext.RouteData.Values["action"]?.ToString()) ? "selected" : "")"><span>◇</span> Design review</a>
+                <a asp-controller="Doctor" asp-action="Cases" class="@(new[] { "Cases", "History" }.Contains(ViewContext.RouteData.Values["action"]?.ToString()) ? "selected" : "")"><span>▤</span> Cases</a>
+                <a asp-controller="Doctor" asp-action="Notifications" class="@(ViewContext.RouteData.Values["action"]?.ToString() == "Notifications" ? "selected" : "")"><span>♧</span> Notifications</a>
+            </nav>
+            <div class="sidebar-foot"><span class="doctor-avatar">DR</span><span><strong>Doctor workspace</strong><small>Secure clinical area</small></span></div>
+        </aside>
+        <main class="main-area">
+            <header class="topbar"><div class="crumb">Dentigo <span>/</span> @ViewData["Title"]</div><a class="profile-link" asp-controller="Doctor" asp-action="Notifications">Notifications <span class="top-icon">♧</span></a></header>
+            @if (TempData["ReviewSuccess"] is string success)
+            {
+                <div class="alert success" role="status">@success</div>
+            }
+            @if (TempData["ReviewError"] is string error)
+            {
+                <div class="alert error" role="alert">@error</div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

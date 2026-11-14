@@ -1,0 +1,14 @@
+@model IReadOnlyList<CaseHistoryRowViewModel>
+@foreach (var item in Model)
+{
+    <article class="timeline-item">
+        <span class="timeline-dot"></span>
+        <div class="timeline-body">
+            <div class="timeline-title">@item.EventType</div>
+            <p>@item.Description</p>
+            @if (!string.IsNullOrWhiteSpace(item.Reason)) { <blockquote><strong>Reason</strong><br />@item.Reason</blockquote> }
+            <small>@(item.ActorName ?? "System")@if (item.PreviousStatus is not null || item.NewStatus is not null) { <span> · @item.PreviousStatus → @item.NewStatus</span> }</small>
+        </div>
+        <time>@item.CreatedAt.ToLocalTime().ToString("MMM d, yyyy · h:mm tt", CultureInfo.GetCultureInfo("en-US"))</time>
+    </article>
+}

@@ -1,0 +1,82 @@
+@model Dentigo.Presentation.Models.ReviewListViewModel
+@{
+    ViewData["Title"] = "Design Review";
+}
+<section class="page-heading"><div><p class="eyebrow">Clinical decision workspace</p><h1>Design review</h1><p class="muted">Search, filter and sort the latest lab submissions, then open the case history when needed.</p></div></section>
+<section class="panel list-view">
+    <div class="panel-heading"><div><h2>Design submissions</h2><p>Each row links to the latest submitted version for that case.</p></div><span class="count-chip">@Model.Results.TotalCount results</span></div>
+
+    <form method="get" asp-action="Reviews" class="list-toolbar" autocomplete="off" data-autosubmit>
+        <input type="hidden" asp-for="Sort" />
+        <input type="hidden" asp-for="Dir" />
+        <input type="hidden" asp-for="PageSize" />
+        <div class="field grow">
+            <label asp-for="Search">Search</label>
+            <input asp-for="Search" type="search" placeholder="Patient, treatment, file, lab technician or DC-000123" />
+            <span asp-validation-for="Search" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Status"></label>
+            <select asp-for="Status">
+                <option value="">All statuses</option>
+                @foreach (var s in Enum.GetValues<DesignReviewStatus>())
+                {
+                    <option value="@s">@s.ToLabel()</option>
+                }
+            </select>
+            <span asp-validation-for="Status" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="Treatment"></label>
+            <select asp-for="Treatment">
+                <option value="">All treatments</option>
+                @foreach (var t in Model.Treatments)
+                {
+                    <option value="@t">@t</option>
+                }
+            </select>
+            <span asp-validation-for="Treatment" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="From"></label>
+            <input asp-for="From" />
+            <span asp-validation-for="From" class="field-error"></span>
+        </div>
+        <div class="field">
+            <label asp-for="To"></label>
+            <input asp-for="To" />
+            <span asp-validation-for="To" class="field-error"></span>
+        </div>
+        <button class="button primary small" type="submit">Apply</button>
+        <a class="button secondary small" asp-action="Reviews">Reset</a>
+    </form>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <partial name="_SortHeader" model='new SortHeaderViewModel("case", "CASE", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='new SortHeaderViewModel("patient", "PATIENT", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='new SortHeaderViewModel("treatment", "TREATMENT", Model.Sort, Model.Dir)' />
+                    <partial name="_SortHeader" model='new SortHeaderViewModel("version", "VERSION FILE", Model.Sort, Model.Dir)' />
+                    <th>SUBMITTED BY</th>
+                    <partial name="_SortHeader" model='new SortHeaderViewModel("submitted", "SUBMITTED", Model.Sort, Model.Dir, "desc")' />
+                    <th>STATUS</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody><partial name="_ReviewRows" model="Model.Results.Items" /></tbody>
+        </table>
+    </div>
+    @if (Model.Results.Items.Count == 0)
+    {
+        <p class="empty-state">No designs match your search and filters.</p>
+    }
+    <partial name="_Pager" model="Model.Results.ToPager()" />
+</section>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/dentigo-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-manual-validation.js" asp-append-version="true"></script>
+    <script src="~/js/doctor-lists.js" asp-append-version="true"></script>
+}
