@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Dentigo.Application/Dentigo.Application.csproj" />
+  <Project Path="Dentigo.Domain/Dentigo.Domain.csproj" />
+  <Project Path="Dentigo.Infrastructure/Dentigo.Infrastructure.csproj" />
+  <Project Path="Dentigo.Presentation/Dentigo.Presentation.csproj" />
+</Solution>

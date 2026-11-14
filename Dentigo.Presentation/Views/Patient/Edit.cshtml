@@ -1,0 +1,57 @@
+﻿@model Dentigo.Presentation.Models.Patient.EditPatientViewModel
+
+
+@{
+    ViewData["Title"] = "Edit Patient";
+    Layout = "~/Views/Shared/_SecretaryLayout.cshtml";
+}
+
+<div class="hd">
+    <div>
+        <h1>Edit Patient Information</h1>
+        <p class="sub">Update the patient's basic and contact details</p>
+    </div>
+</div>
+
+<div class="card">
+    <form asp-controller="Patients"
+          asp-action="Edit"
+          asp-route-id="@Model.Id"
+          method="post"
+          class="fm">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="Id" />
+
+        <div class="f">
+            <label asp-for="FullName">Full Name *</label>
+            <input asp-for="FullName"
+                   type="text"
+                   placeholder="Enter full name" />
+            <span asp-validation-for="FullName" class="err"></span>
+        </div>
+
+        <div class="f">
+            <label asp-for="PhoneNumber">Contact Details</label>
+            <input asp-for="PhoneNumber"
+                   type="text"
+                   placeholder="Phone number" />
+            <span asp-validation-for="PhoneNumber" class="err"></span>
+        </div>
+
+        <div class="ac">
+            <button class="btn" type="submit">Save Changes</button>
+
+            <a class="btn s"
+               asp-controller="Patients"
+               asp-action="Index">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

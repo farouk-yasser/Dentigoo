@@ -1,0 +1,56 @@
+﻿@model Dentigo.Presentation.Models.Patient.CreateClinicalFindingViewModel
+
+@{
+    ViewData["Title"] = "Add Clinical Finding";
+    Layout = "~/Views/Shared/_SecretaryLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Add Clinical Finding</h1>
+        <p class="page-subtitle">Patient: @ViewBag.PatientName</p>
+    </div>
+
+    <a asp-controller="Patients"
+       asp-action="DentalChart"
+       asp-route-id="@Model.PatientId"
+       class="btn btn-outline">
+        Back to Dental Chart
+    </a>
+</div>
+
+<div class="card">
+    <form asp-controller="Patients"
+          asp-action="AddClinicalFinding"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" asp-for="PatientId" />
+
+        <div class="form-group">
+            <label asp-for="ToothId">Select Tooth</label>
+            <select asp-for="ToothId"
+                    asp-items="ViewBag.Teeth"
+                    class="form-control">
+                <option value="">-- Select Tooth --</option>
+            </select>
+            <span asp-validation-for="ToothId"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Description">Description</label>
+            <textarea asp-for="Description"
+                      class="form-control"
+                      rows="4"
+                      placeholder="Describe the dental problem..."></textarea>
+            <span asp-validation-for="Description"
+                  class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn">
+            Save Clinical Finding
+        </button>
+    </form>
+</div>

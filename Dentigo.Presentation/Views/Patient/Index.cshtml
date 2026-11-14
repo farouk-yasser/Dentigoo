@@ -1,0 +1,90 @@
+﻿@model List<Dentigo.Presentation.Models.Patient.PatientViewModel>
+
+@{
+    ViewData["Title"] = "Patient Management";
+    Layout = "~/Views/Shared/_SecretaryLayout.cshtml";
+}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Patient Management</h1>
+        <p class="page-subtitle">View and manage patient information.</p>
+    </div>
+
+    <a asp-controller="Patients"
+       asp-action="Create"
+       class="btn btn-primary">
+        + Register New Patient
+    </a>
+</div>
+
+<div class="card">
+
+    <form asp-controller="Patients"
+          asp-action="Index"
+          method="get">
+
+        <input type="text"
+               name="searchString"
+               value="@ViewBag.SearchString"
+               placeholder="Search by name or phone number..." />
+
+        <button type="submit" class="btn btn-primary">
+            Search
+        </button>
+
+        <a asp-controller="Patients"
+           asp-action="Index"
+           class="btn">
+            Clear
+        </a>
+    </form>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Patient ID</th>
+                <th>Full Name</th>
+                <th>Phone Number</th>
+                <th>Date Added</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @if (Model.Any())
+            {
+                @foreach (var patient in Model)
+                {
+                    <tr>
+                        <td>@patient.Id</td>
+                        <td>@patient.FullName</td>
+                        <td>@(patient.PhoneNumber ?? "-")</td>
+                        <td>@patient.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <a asp-controller="Patients"
+                               asp-action="Details"
+                               asp-route-id="@patient.Id">
+                                Details
+                            </a>
+
+                            |
+
+                            <a asp-controller="Patients"
+                               asp-action="Edit"
+                               asp-route-id="@patient.Id">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5">No patients found.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
