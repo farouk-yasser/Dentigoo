@@ -39,25 +39,25 @@
         @Html.AntiForgeryToken()
 
         <input type="hidden"
-               name="PatientId"
+               asp-for="NewTooth.PatientId"
                value="@Model.PatientId" />
 
         <div class="form-group">
-            <label>Tooth Number</label>
-            <input type="text"
-                   name="ToothNumber"
+            <label asp-for="NewTooth.ToothNumber">Tooth Number *</label>
+            <input asp-for="NewTooth.ToothNumber"
+                   type="text"
                    class="form-control"
-                   maxlength="10"
-                   required
                    placeholder="Example: 11, 12, 21" />
+            <span asp-validation-for="NewTooth.ToothNumber" class="text-danger"></span>
         </div>
 
         <div class="form-group">
-            <label>Notes</label>
-            <textarea name="Notes"
+            <label asp-for="NewTooth.Notes">Notes</label>
+            <textarea asp-for="NewTooth.Notes"
                       class="form-control"
                       rows="3"
                       placeholder="Optional notes"></textarea>
+            <span asp-validation-for="NewTooth.Notes" class="text-danger"></span>
         </div>
 
         <button type="submit" class="btn">
@@ -107,3 +107,7 @@
         </table>
     }
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

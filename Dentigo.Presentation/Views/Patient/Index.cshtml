@@ -22,22 +22,46 @@
 
     <form asp-controller="Patients"
           asp-action="Index"
-          method="get">
+          method="get"
+          style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 25px;">
 
-        <input type="text"
-               name="searchString"
-               value="@ViewBag.SearchString"
-               placeholder="Search by name or phone number..." />
+        <div style="flex: 2 1 240px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 15px;">Search</label>
+            <input type="text"
+                   name="searchString"
+                   value="@ViewBag.SearchString"
+                   placeholder="Search by name or phone number..."
+                   style="width: 100%; padding: 12px 16px; font-size: 16px; border: 1px solid #b9c6c6; border-radius: 10px;" />
+        </div>
 
-        <button type="submit" class="btn btn-primary">
-            Search
-        </button>
+        <div style="flex: 1 1 170px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 15px;">Date From</label>
+            <input type="date"
+                   name="createdFrom"
+                   value="@ViewBag.CreatedFrom"
+                   style="width: 100%; padding: 12px 16px; font-size: 16px; border: 1px solid #b9c6c6; border-radius: 10px;" />
+        </div>
 
-        <a asp-controller="Patients"
-           asp-action="Index"
-           class="btn">
-            Clear
-        </a>
+        <div style="flex: 1 1 170px;">
+            <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 15px;">Date To</label>
+            <input type="date"
+                   name="createdTo"
+                   value="@ViewBag.CreatedTo"
+                   style="width: 100%; padding: 12px 16px; font-size: 16px; border: 1px solid #b9c6c6; border-radius: 10px;" />
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn btn-primary" style="padding: 12px 22px;">
+                Filter
+            </button>
+
+            <a asp-controller="Patients"
+               asp-action="Index"
+               class="btn btn-outline"
+               style="padding: 12px 22px;">
+                Clear Filters
+            </a>
+        </div>
     </form>
 
     <table class="table">
@@ -87,4 +111,57 @@
             }
         </tbody>
     </table>
+
+    @if (ViewBag.TotalCount > 0)
+    {
+        <div class="table-footer" style="display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1px solid #e0e8e8; margin-top: 15px;">
+            <div>
+                <span>Showing Page <strong>@ViewBag.CurrentPage</strong> of <strong>@(ViewBag.TotalPages == 0 ? 1 : ViewBag.TotalPages)</strong> (Total: <strong>@ViewBag.TotalCount</strong> patients)</span>
+            </div>
+
+            <div style="display: flex; gap: 8px; align-items: center;">
+                @if (ViewBag.HasPreviousPage)
+                {
+                    <a asp-controller="Patients"
+                       asp-action="Index"
+                       asp-route-pageNumber="@(ViewBag.CurrentPage - 1)"
+                       asp-route-searchString="@ViewBag.SearchString"
+                       asp-route-createdFrom="@ViewBag.CreatedFrom"
+                       asp-route-createdTo="@ViewBag.CreatedTo"
+                       class="btn btn-outline"
+                       style="padding: 8px 16px; font-size: 15px;">
+                        &laquo; Previous
+                    </a>
+                }
+                else
+                {
+                    <span class="btn btn-outline"
+                          style="padding: 8px 16px; font-size: 15px; opacity: 0.5; cursor: not-allowed; pointer-events: none;">
+                        &laquo; Previous
+                    </span>
+                }
+
+                @if (ViewBag.HasNextPage)
+                {
+                    <a asp-controller="Patients"
+                       asp-action="Index"
+                       asp-route-pageNumber="@(ViewBag.CurrentPage + 1)"
+                       asp-route-searchString="@ViewBag.SearchString"
+                       asp-route-createdFrom="@ViewBag.CreatedFrom"
+                       asp-route-createdTo="@ViewBag.CreatedTo"
+                       class="btn btn-outline"
+                       style="padding: 8px 16px; font-size: 15px;">
+                        Next &raquo;
+                    </a>
+                }
+                else
+                {
+                    <span class="btn btn-outline"
+                          style="padding: 8px 16px; font-size: 15px; opacity: 0.5; cursor: not-allowed; pointer-events: none;">
+                        Next &raquo;
+                    </span>
+                }
+            </div>
+        </div>
+    }
 </div>

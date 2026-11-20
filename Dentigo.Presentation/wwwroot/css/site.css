@@ -268,3 +268,13 @@ body {
     font-weight: 600;
     font-size: 14px;
 }
+
+.alert-danger {
+    background: #fde8e8;
+    color: #9b1c1c;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 14px;
+}

@@ -1,46 +1,72 @@
-﻿using Dentigo.Domain.Enums;
-using Microsoft.AspNetCore.Mvc.Rendering;
+﻿using Dentigo.Application.Interfaces.Repositories;
+using Dentigo.Application.Models;
 using Dentigo.Domain.Entities;
-using Dentigo.Infrastructure.DbContexts;
 using Dentigo.Presentation.Models.Patient;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Dentigo.Presentation.Controllers
 {
     public class PatientsController : Controller
     {
-        private readonly DentigoDbContext _context;
+        private readonly IPatientRepository _patientRepository;
+        private readonly IToothRepository _toothRepository;
+        private readonly IClinicalFindingRepository _clinicalFindingRepository;
+        private readonly IUserRepository _userRepository;
 
-        public PatientsController(DentigoDbContext context)
+        public PatientsController(
+            IPatientRepository patientRepository,
+            IToothRepository toothRepository,
+            IClinicalFindingRepository clinicalFindingRepository,
+            IUserRepository userRepository)
         {
-            _context = context;
+            _patientRepository = patientRepository;
+            _toothRepository = toothRepository;
+            _clinicalFindingRepository = clinicalFindingRepository;
+            _userRepository = userRepository;
         }
 
-        public async Task<IActionResult> Index(string? searchString)
+        public async Task<IActionResult> Index(
+            string? searchString,
+            DateTime? createdFrom,
+            DateTime? createdTo,
+            int pageNumber = 1,
+            CancellationToken cancellationToken = default)
         {
-            IQueryable<Patient> patients = _context.Patients;
-
-            if (!string.IsNullOrWhiteSpace(searchString))
+            var parameters = new PatientFilterParameters
             {
-                patients = patients.Where(p =>
-                    p.FullName.Contains(searchString) ||
-                    (p.PhoneNumber != null &&
-                     p.PhoneNumber.Contains(searchString)));
-            }
+                SearchString = searchString,
+                CreatedFrom = createdFrom,
+                CreatedTo = createdTo,
+                PageNumber = pageNumber < 1 ? 1 : pageNumber,
+                PageSize = 10
+            };
 
-            var result = await patients
-                .OrderBy(p => p.FullName)
-            .Select(p => new Dentigo.Presentation.Models.Patient.PatientViewModel
-            {
+            var pagedResult = await _patientRepository.GetPagedAsync(parameters, cancellationToken);
+
+            var result = pagedResult.Items
+                .Select(p => new PatientViewModel
+                {
                     Id = p.Id,
                     FullName = p.FullName,
                     PhoneNumber = p.PhoneNumber,
                     CreatedAt = p.CreatedAt
                 })
-                .ToListAsync();
+                .ToList();
 
             ViewBag.SearchString = searchString;
+            ViewBag.CreatedFrom = createdFrom?.ToString("yyyy-MM-dd");
+            ViewBag.CreatedTo = createdTo?.ToString("yyyy-MM-dd");
+
+            ViewBag.CurrentPage = pagedResult.PageNumber;
+            ViewBag.TotalPages = pagedResult.TotalPages;
+            ViewBag.TotalCount = pagedResult.TotalCount;
+            ViewBag.HasPreviousPage = pagedResult.HasPreviousPage;
+            ViewBag.HasNextPage = pagedResult.HasNextPage;
 
             return View("~/Views/Patient/Index.cshtml", result);
         }
@@ -48,13 +74,12 @@ namespace Dentigo.Presentation.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            return View("~/Views/Patient/Create.cshtml",
-                new CreatePatientViewModel());
+            return View("~/Views/Patient/Create.cshtml", new CreatePatientViewModel());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreatePatientViewModel model)
+        public async Task<IActionResult> Create(CreatePatientViewModel model, CancellationToken cancellationToken = default)
         {
             if (!ModelState.IsValid)
                 return View("~/Views/Patient/Create.cshtml", model);
@@ -66,35 +91,34 @@ namespace Dentigo.Presentation.Controllers
                 CreatedAt = DateTime.Now
             };
 
-            _context.Patients.Add(patient);
-            await _context.SaveChangesAsync();
+            await _patientRepository.AddAsync(patient, cancellationToken);
+            await _patientRepository.SaveChangesAsync(cancellationToken);
 
             return RedirectToAction(nameof(Index));
         }
 
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, CancellationToken cancellationToken = default)
         {
-            var patient = await _context.Patients
-                .Where(p => p.Id == id)
-                .Select(p => new PatientViewModel
-                {
-                    Id = p.Id,
-                    FullName = p.FullName,
-                    PhoneNumber = p.PhoneNumber,
-                    CreatedAt = p.CreatedAt
-                })
-                .FirstOrDefaultAsync();
+            var patient = await _patientRepository.GetByIdAsync(id, cancellationToken);
 
             if (patient == null)
                 return NotFound();
 
-            return View("~/Views/Patient/Details.cshtml", patient);
+            var model = new PatientViewModel
+            {
+                Id = patient.Id,
+                FullName = patient.FullName,
+                PhoneNumber = patient.PhoneNumber,
+                CreatedAt = patient.CreatedAt
+            };
+
+            return View("~/Views/Patient/Details.cshtml", model);
         }
 
         [HttpGet]
-        public async Task<IActionResult> Edit(int id)
+        public async Task<IActionResult> Edit(int id, CancellationToken cancellationToken = default)
         {
-            var patient = await _context.Patients.FindAsync(id);
+            var patient = await _patientRepository.GetByIdAsync(id, cancellationToken);
 
             if (patient == null)
                 return NotFound();
@@ -111,7 +135,7 @@ namespace Dentigo.Presentation.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, EditPatientViewModel model)
+        public async Task<IActionResult> Edit(int id, EditPatientViewModel model, CancellationToken cancellationToken = default)
         {
             if (id != model.Id)
                 return BadRequest();
@@ -119,7 +143,7 @@ namespace Dentigo.Presentation.Controllers
             if (!ModelState.IsValid)
                 return View("~/Views/Patient/Edit.cshtml", model);
 
-            var patient = await _context.Patients.FindAsync(id);
+            var patient = await _patientRepository.GetByIdAsync(id, cancellationToken);
 
             if (patient == null)
                 return NotFound();
@@ -128,58 +152,83 @@ namespace Dentigo.Presentation.Controllers
             patient.PhoneNumber = model.PhoneNumber;
             patient.UpdatedAt = DateTime.Now;
 
-            await _context.SaveChangesAsync();
+            _patientRepository.Update(patient);
+            await _patientRepository.SaveChangesAsync(cancellationToken);
 
             return RedirectToAction(nameof(Index));
         }
-        public async Task<IActionResult> DentalChart(int id)
+
+        public async Task<IActionResult> DentalChart(int id, CancellationToken cancellationToken = default)
         {
-            var patient = await _context.Patients
-                .FirstOrDefaultAsync(p => p.Id == id);
+            var patient = await _patientRepository.GetByIdAsync(id, cancellationToken);
 
             if (patient == null)
                 return NotFound();
 
-            var teeth = await _context.Teeth
-                .Where(t => t.PatientId == id)
-                .Select(t => new ToothViewModel
-                {
-                    Id = t.Id,
-                    ToothNumber = t.ToothNumber,
-                    Notes = t.Notes
-                })
-                .ToListAsync();
+            var teeth = await _toothRepository.GetByPatientIdAsync(id, cancellationToken);
 
             var model = new DentalChartViewModel
             {
                 PatientId = patient.Id,
                 PatientName = patient.FullName,
-                Teeth = teeth
+                Teeth = teeth.Select(t => new ToothViewModel
+                {
+                    Id = t.Id,
+                    ToothNumber = t.ToothNumber,
+                    Notes = t.Notes
+                }).ToList(),
+                NewTooth = new AddToothViewModel { PatientId = patient.Id }
             };
 
             return View("~/Views/Patient/DentalChart.cshtml", model);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddTooth(AddToothViewModel model)
+        public async Task<IActionResult> AddTooth([Bind(Prefix = "NewTooth")] AddToothViewModel model, CancellationToken cancellationToken = default)
         {
-            if (!ModelState.IsValid)
-                return RedirectToAction(nameof(DentalChart), new { id = model.PatientId });
-
-            var patientExists = await _context.Patients
-                .AnyAsync(p => p.Id == model.PatientId);
-
-            if (!patientExists)
-                return NotFound();
-
-            var toothExists = await _context.Teeth
-                .AnyAsync(t => t.PatientId == model.PatientId &&
-                               t.ToothNumber == model.ToothNumber);
-
-            if (toothExists)
+            if (model.PatientId <= 0)
             {
-                TempData["Error"] = "This tooth is already registered.";
-                return RedirectToAction(nameof(DentalChart), new { id = model.PatientId });
+                TempData["Error"] = "Invalid patient ID.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var patient = await _patientRepository.GetByIdAsync(model.PatientId, cancellationToken);
+
+            if (patient == null)
+            {
+                TempData["Error"] = "Patient not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (ModelState.IsValid)
+            {
+                var toothExists = await _toothRepository.ExistsAsync(model.PatientId, model.ToothNumber, cancellationToken);
+
+                if (toothExists)
+                {
+                    ModelState.AddModelError("NewTooth.ToothNumber", "This tooth is already registered.");
+                }
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var teeth = await _toothRepository.GetByPatientIdAsync(model.PatientId, cancellationToken);
+
+                var viewModel = new DentalChartViewModel
+                {
+                    PatientId = patient.Id,
+                    PatientName = patient.FullName,
+                    Teeth = teeth.Select(t => new ToothViewModel
+                    {
+                        Id = t.Id,
+                        ToothNumber = t.ToothNumber,
+                        Notes = t.Notes
+                    }).ToList(),
+                    NewTooth = model
+                };
+
+                return View("~/Views/Patient/DentalChart.cshtml", viewModel);
             }
 
             var tooth = new Tooth
@@ -189,8 +238,8 @@ namespace Dentigo.Presentation.Controllers
                 Notes = model.Notes
             };
 
-            _context.Teeth.Add(tooth);
-            await _context.SaveChangesAsync();
+            await _toothRepository.AddAsync(tooth, cancellationToken);
+            await _toothRepository.SaveChangesAsync(cancellationToken);
 
             TempData["Success"] = "Tooth added successfully.";
 
@@ -198,23 +247,17 @@ namespace Dentigo.Presentation.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> AddClinicalFinding(int patientId)
+        public async Task<IActionResult> AddClinicalFinding(int patientId, CancellationToken cancellationToken = default)
         {
-            var patient = await _context.Patients
-                .FirstOrDefaultAsync(p => p.Id == patientId);
+            var patient = await _patientRepository.GetByIdAsync(patientId, cancellationToken);
 
             if (patient == null)
                 return NotFound();
 
-            ViewBag.PatientName = patient.FullName;
+            var teeth = await _toothRepository.GetByPatientIdAsync(patientId, cancellationToken);
 
-            ViewBag.Teeth = new SelectList(
-                await _context.Teeth
-                    .Where(t => t.PatientId == patientId)
-                    .ToListAsync(),
-                "Id",
-                "ToothNumber"
-            );
+            ViewBag.PatientName = patient.FullName;
+            ViewBag.Teeth = new SelectList(teeth, "Id", "ToothNumber");
 
             return View("~/Views/Patient/AddClinicalFinding.cshtml",
                 new CreateClinicalFindingViewModel
@@ -225,67 +268,71 @@ namespace Dentigo.Presentation.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddClinicalFinding(
-            CreateClinicalFindingViewModel model)
+        public async Task<IActionResult> AddClinicalFinding(CreateClinicalFindingViewModel model, CancellationToken cancellationToken = default)
         {
-            var patientExists = await _context.Patients
-                .AnyAsync(p => p.Id == model.PatientId);
+            if (model.PatientId <= 0)
+            {
+                TempData["Error"] = "Invalid patient ID.";
+                return RedirectToAction(nameof(Index));
+            }
 
-            if (!patientExists)
-                return NotFound();
+            var patient = await _patientRepository.GetByIdAsync(model.PatientId, cancellationToken);
 
-            var toothExists = await _context.Teeth
-                .AnyAsync(t => t.Id == model.ToothId &&
-                               t.PatientId == model.PatientId);
+            if (patient == null)
+            {
+                TempData["Error"] = "Patient not found.";
+                return RedirectToAction(nameof(Index));
+            }
 
-            if (!toothExists)
-                ModelState.AddModelError("ToothId", "Invalid tooth selected.");
+            if (model.ToothId.HasValue)
+            {
+                var toothExists = await _toothRepository.ExistsByIdAndPatientIdAsync(model.ToothId.Value, model.PatientId, cancellationToken);
+
+                if (!toothExists)
+                    ModelState.AddModelError(nameof(model.ToothId), "Invalid tooth selected.");
+            }
 
             if (!ModelState.IsValid)
             {
-                ViewBag.PatientName = await _context.Patients
-                    .Where(p => p.Id == model.PatientId)
-                    .Select(p => p.FullName)
-                    .FirstOrDefaultAsync();
+                var teeth = await _toothRepository.GetByPatientIdAsync(model.PatientId, cancellationToken);
 
-                ViewBag.Teeth = new SelectList(
-                    await _context.Teeth
-                        .Where(t => t.PatientId == model.PatientId)
-                        .ToListAsync(),
-                    "Id",
-                    "ToothNumber",
-                    model.ToothId
-                );
+                ViewBag.PatientName = patient.FullName;
+                ViewBag.Teeth = new SelectList(teeth, "Id", "ToothNumber", model.ToothId);
 
                 return View("~/Views/Patient/AddClinicalFinding.cshtml", model);
             }
 
-            var doctorId = await _context.Users
-                .Where(u => u.Role == UserRole.Doctor && u.IsActive)
-                .Select(u => u.Id)
-                .FirstOrDefaultAsync();
+            // NOTE: Temporary default assignment. Authentication and logged-in user identification
+            // are not configured yet, so we assign the first active Doctor as the default recorder.
+            var doctorId = await _userRepository.GetActiveDoctorIdAsync(cancellationToken);
 
-            if (doctorId == 0)
-                return BadRequest("No active doctor found.");
+            if (!doctorId.HasValue || doctorId.Value == 0)
+            {
+                ModelState.AddModelError(string.Empty, "No active doctor found in the system to assign this clinical finding.");
+
+                var teeth = await _toothRepository.GetByPatientIdAsync(model.PatientId, cancellationToken);
+
+                ViewBag.PatientName = patient.FullName;
+                ViewBag.Teeth = new SelectList(teeth, "Id", "ToothNumber", model.ToothId);
+
+                return View("~/Views/Patient/AddClinicalFinding.cshtml", model);
+            }
 
             var finding = new ClinicalFinding
             {
                 PatientId = model.PatientId,
-                ToothId = model.ToothId,
+                ToothId = model.ToothId!.Value,
                 Description = model.Description,
-                CreatedByUserId = doctorId,
+                CreatedByUserId = doctorId.Value,
                 CreatedAt = DateTime.Now
             };
 
-            _context.ClinicalFindings.Add(finding);
-            await _context.SaveChangesAsync();
+            await _clinicalFindingRepository.AddAsync(finding, cancellationToken);
+            await _clinicalFindingRepository.SaveChangesAsync(cancellationToken);
 
             TempData["Success"] = "Clinical finding added successfully.";
 
-            return RedirectToAction(nameof(DentalChart),
-                new { id = model.PatientId });
+            return RedirectToAction(nameof(DentalChart), new { id = model.PatientId });
         }
-
     }
-
 }

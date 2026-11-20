@@ -1,4 +1,5 @@
 
+using Dentigo.Infrastructure;
 using Dentigo.Infrastructure.DbContexts;
 using Microsoft.EntityFrameworkCore;
 namespace Dentigo.Presentation
@@ -14,6 +15,8 @@ namespace Dentigo.Presentation
             builder.Services.AddDbContext<DentigoDbContext>(options =>
             options.UseSqlServer(
             builder.Configuration.GetConnectionString("DentigoConnection")));
+
+            builder.Services.AddInfrastructureRepositories();
          
             var app = builder.Build();
 

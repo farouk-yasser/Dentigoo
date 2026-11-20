@@ -1,4 +1,6 @@
-﻿namespace Dentigo.Presentation.Models.Patient
+﻿using System.Collections.Generic;
+
+namespace Dentigo.Presentation.Models.Patient
 {
     public class DentalChartViewModel
     {
@@ -6,6 +8,8 @@
         public string PatientName { get; set; } = null!;
 
         public List<ToothViewModel> Teeth { get; set; } = new();
+
+        public AddToothViewModel NewTooth { get; set; } = new();
     }
 
     public class ToothViewModel
